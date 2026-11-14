@@ -59,9 +59,12 @@ $('query').onsubmit=async e=>{
   try{$('result').textContent=description(await api('/api/reservations/'+encodeURIComponent(id)));}catch(e){$('result').textContent=e.message;}finally{if(button)button.disabled=false;}
 };
 load();
+let scanGeneration=0;
 function showPage(){
   const onsite=location.hash==='#onsite';
-  $('onsite').hidden=!onsite;$('booking').hidden=onsite;
+  const bluetooth=location.hash==='#bluetooth';
+  $('onsite').hidden=!onsite;$('bluetooth').hidden=!bluetooth;$('booking').hidden=onsite||bluetooth;
+  if(!bluetooth)stopCamera();
 }
 window.addEventListener('hashchange',showPage);showPage();
 let onsiteBusy=false;
@@ -74,11 +77,14 @@ async function lookupOnsite(code){
     if($('onsiteCode').value.trim()!==code)return;
     const minutes=Math.ceil(data.waitSeconds/60);
     $('onsiteResult').textContent=description(data.reservation)+(minutes?'｜尚未到時，約需等待 '+(minutes>=60?Math.floor(minutes/60)+' 小時 ':'')+minutes%60+' 分鐘':'');
-    for(const [action,label] of [['check','報到'],['cancel','取消預約'],['start','開始運轉'],['end','結束']]){
+    for(const [action,label] of [['check','報到'],['cancel','取消預約'],['start','移動（流程測試）'],['end','結束']]){
       if(!data.allowed[action])continue;
       const b=document.createElement('button');b.type='button';b.textContent=label;$('onsiteActions').append(b);
       b.onclick=async()=>{
         if(onsiteBusy)return;
+        if(action==='start'&&!publicDevice?.gatt?.connected){
+          $('onsiteFeedback').textContent='請先連接 ESP32 藍牙，再回來操作。';return;
+        }
         const id=$('onsiteId').value.trim();
         if(!/^R-[0-9a-f]{32}$/.test(id)){$('onsiteFeedback').textContent='請輸入完整預約編號。';return;}
         if(action==='cancel'&&!confirm('確定取消這筆預約？'))return;
@@ -102,4 +108,69 @@ $('confirmPlaque').onclick=async()=>{
   $('plaqueResult').textContent='確認中…';
   try{const p=await api('/api/plaque?code='+encodeURIComponent(code));if($('plaque').value.trim()!==code)return;plaque=p;$('plaqueResult').textContent='祭拜對象：'+p.code+(p.name?'｜'+p.name:'');await load();}
   catch(e){plaque=null;$('submit').disabled=true;$('plaqueResult').textContent=e.message;}
+};
+
+let publicDevice, publicConnecting=false;
+const bleStatus=text=>{$('publicBleStatus').textContent=text;};
+$('publicBleConnect').onclick=async()=>{
+  if(publicConnecting||publicDevice?.gatt?.connected)return;
+  if(!navigator.bluetooth){bleStatus('此瀏覽器無法使用網頁藍牙，請改用支援的 Chrome 並開啟藍牙。');return;}
+  const service='640ac120-467c-459d-8899-913ea30645b1';
+  publicConnecting=true;$('publicBleConnect').disabled=true;bleStatus('正在選擇裝置…');
+  try{
+    const device=await navigator.bluetooth.requestDevice({filters:[{services:[service]}]});
+    publicDevice=device;
+    device.addEventListener('gattserverdisconnected',()=>{
+      if(publicDevice!==device)return;
+      $('publicBleDisconnect').disabled=true;$('publicBleConnect').disabled=false;bleStatus('連線已中斷。');
+    });
+    const gatt=await device.gatt.connect();
+    await gatt.getPrimaryService(service);
+    if(!gatt.connected)throw Error('Disconnected');
+    $('publicBleDisconnect').disabled=false;bleStatus('已連接 ESP32。可返回現場操作。');
+  }catch(e){
+    publicDevice?.gatt?.disconnect();bleStatus(e.name==='NotFoundError'?'未選取裝置。':'連線失敗，請確認 ESP32 韌體與藍牙狀態。');
+  }finally{publicConnecting=false;$('publicBleConnect').disabled=!!publicDevice?.gatt?.connected;}
+};
+$('publicBleDisconnect').onclick=()=>publicDevice?.gatt?.disconnect();
+addEventListener('pagehide',()=>publicDevice?.gatt?.disconnect());
+function stopCamera(){
+  ++scanGeneration;
+  const video=$('qrVideo');
+  video.srcObject?.getTracks().forEach(track=>track.stop());
+  video.srcObject=null;video.hidden=true;
+  $('stopScan').hidden=true;$('scanQr').disabled=false;
+}
+$('stopScan').onclick=()=>{stopCamera();$('scanStatus').textContent='相機已關閉。';};
+addEventListener('pagehide',stopCamera);
+$('scanQr').onclick=async()=>{
+  if(!navigator.mediaDevices?.getUserMedia||!globalThis.BarcodeDetector){
+    $('scanStatus').textContent='此瀏覽器不支援網頁掃碼。請直接按「連接 ESP32」。';return;
+  }
+  const run=++scanGeneration, status=$('scanStatus'), video=$('qrVideo');
+  $('scanQr').disabled=true;$('stopScan').hidden=false;status.textContent='等待相機權限…';
+  try{
+    if(!(await BarcodeDetector.getSupportedFormats()).includes('qr_code'))throw Error();
+    if(run!==scanGeneration)return;
+    const detector=new BarcodeDetector({formats:['qr_code']});
+    const stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'}}});
+    if(run!==scanGeneration){stream.getTracks().forEach(t=>t.stop());return;}
+    video.srcObject=stream;video.hidden=false;await video.play();
+    const expected='https://tntintaiwan-prog.github.io/ferris-wheel-reservation/#bluetooth';
+    status.textContent='請將現場設備 QR Code 對準鏡頭。';
+    async function frame(){
+      if(run!==scanGeneration)return;
+      try{
+        const results=await detector.detect(video);
+        if(run!==scanGeneration)return;
+        if(results.some(x=>x.rawValue===expected)){
+          stopCamera();status.textContent='已辨識現場設備標籤。請按「連接 ESP32」並確認裝置。';
+          $('publicBleConnect').focus();return;
+        }
+        if(results.length)status.textContent='這不是本系統的設備 QR Code。';
+        setTimeout(frame,200);
+      }catch{if(run===scanGeneration){stopCamera();status.textContent='掃描中斷，仍可直接連接 ESP32。';}}
+    }
+    frame();
+  }catch{if(run===scanGeneration){stopCamera();status.textContent='無法開啟相機或辨識 QR Code，請直接連接 ESP32。';}}
 };
