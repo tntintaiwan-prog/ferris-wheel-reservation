@@ -111,6 +111,27 @@ $('confirmPlaque').onclick=async()=>{
 };
 
 let publicDevice, publicConnecting=false;
+const music=$('ritualMusic');
+let musicAttempt=0;
+function stopMusic(message='音樂已停止。'){
+  ++musicAttempt;
+  music.pause();music.currentTime=0;
+  $('stopMusic').disabled=true;
+  $('playMusic').disabled=!publicDevice?.gatt?.connected;
+  $('musicStatus').textContent=message;
+}
+$('playMusic').onclick=async()=>{
+  if(!publicDevice?.gatt?.connected)return;
+  const attempt=++musicAttempt;
+  $('playMusic').disabled=true;$('stopMusic').disabled=false;
+  try{
+    await music.play();
+    if(attempt===musicAttempt)$('musicStatus').textContent='正在播放示範音樂。';
+  }catch{
+    if(attempt===musicAttempt)stopMusic('無法播放音樂，請再試一次。');
+  }
+};
+$('stopMusic').onclick=()=>stopMusic();
 const bleStatus=text=>{$('publicBleStatus').textContent=text;};
 $('publicBleConnect').onclick=async()=>{
   if(publicConnecting||publicDevice?.gatt?.connected)return;
@@ -123,17 +144,19 @@ $('publicBleConnect').onclick=async()=>{
     device.addEventListener('gattserverdisconnected',()=>{
       if(publicDevice!==device)return;
       $('publicBleDisconnect').disabled=true;$('publicBleConnect').disabled=false;bleStatus('連線已中斷。');
+      stopMusic('ESP32 已斷線，音樂已停止。');
     });
     const gatt=await device.gatt.connect();
     await gatt.getPrimaryService(service);
     if(!gatt.connected)throw Error('Disconnected');
     $('publicBleDisconnect').disabled=false;bleStatus('已連接 ESP32。可返回現場操作。');
+    $('playMusic').disabled=false;$('musicStatus').textContent='已就緒，可播放音樂。';
   }catch(e){
     publicDevice?.gatt?.disconnect();bleStatus(e.name==='NotFoundError'?'未選取裝置。':'連線失敗，請確認 ESP32 韌體與藍牙狀態。');
   }finally{publicConnecting=false;$('publicBleConnect').disabled=!!publicDevice?.gatt?.connected;}
 };
 $('publicBleDisconnect').onclick=()=>publicDevice?.gatt?.disconnect();
-addEventListener('pagehide',()=>publicDevice?.gatt?.disconnect());
+addEventListener('pagehide',()=>{stopMusic();publicDevice?.gatt?.disconnect();});
 function stopCamera(){
   ++scanGeneration;
   const video=$('qrVideo');
