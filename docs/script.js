@@ -12,7 +12,7 @@ async function api(path,options={}){
 function keyFor(date,time,code){
   const k='ferris-request:'+date+':'+time+':'+code;
   let key=localStorage.getItem(k);
-  if(!key){key=Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');localStorage.setItem(k,key);}
+  if(!/^[0-9a-f]{32}$/.test(key||'')){key=Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');localStorage.setItem(k,key);}
   return [k,key];
 }
 function description(r){return r.date+' '+r.time+'（臺灣時間）｜'+status[r.status]+(r.plaque?'｜牌位 '+r.plaque.code+' '+r.plaque.name:'｜未指定牌位');}
