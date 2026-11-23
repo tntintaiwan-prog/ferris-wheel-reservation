@@ -1,5 +1,266 @@
-:root{color-scheme:light;font:16px/1.65 system-ui,sans-serif;color:#233c35;background:#f2f5ec}*{box-sizing:border-box}body{margin:0;padding:20px}header,main,footer{max-width:1000px;margin:auto}header{background:linear-gradient(125deg,#1b473e,#306e58);color:white;border-radius:24px;padding:28px 32px;box-shadow:0 8px 0 #b4cabd,0 18px 24px #1b473e30}header h1{margin:0;font-size:clamp(26px,5vw,40px)}header p{margin:0;color:#e1eee8}main{display:grid;grid-template-columns:1.25fr 1fr;gap:18px;margin-top:32px}section{border-radius:18px;padding:22px;background:white;border:1px solid #d7e2d7}h2{margin:0}label,legend{font-weight:650}label{display:block}input,select,button{font:inherit;border-radius:8px;min-height:44px;padding:8px 12px}input,select{width:100%;border:1px solid #acbfb4;margin:4px 0 12px;background:white}button{border:1px solid #28614f;background:#28614f;color:white;cursor:pointer}button:disabled{opacity:.55;cursor:default}.slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.slots button{background:#eaf2e8;color:#203f36}.slots button[aria-pressed=true]{background:#28614f;color:white}.slots small{display:block}fieldset{border:0;padding:0;margin:0 0 16px}a{color:#245c4a}footer{text-align:center;padding:24px;color:#465d53}[role=status]{overflow-wrap:anywhere}[hidden]{display:none!important}@media(max-width:650px){main{grid-template-columns:1fr}body{padding:12px}section{padding:17px}}
+/* 摩天靈骨塔祭拜預約｜一般使用者頁（手機優先） */
+:root{
+  color-scheme:light;
+  --ink:#1f3530;
+  --ink-soft:#4b625a;
+  --bg:#f2f5ec;
+  --card:#ffffff;
+  --line:#d7e2d7;
+  --line-strong:#acbfb4;
+  --brand:#28614f;
+  --brand-dark:#1b473e;
+  --brand-soft:#eaf2e8;
+  --accent:#b8863b;
+  --focus:#d79a2b;
+  --radius:16px;
+  font:17px/1.7 system-ui,-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+  color:var(--ink);
+  background:var(--bg);
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
+  -webkit-tap-highlight-color:transparent;
+}
+header,main,footer{max-width:1000px;margin-inline:auto}
+h1,h2,h3{line-height:1.3;letter-spacing:.02em}
+h2{margin:0 0 4px;font-size:1.3rem}
+h3{font-size:1.08rem;margin:0 0 8px}
+p{margin:8px 0}
+a{color:#245c4a;text-underline-offset:3px}
+strong{font-weight:700}
 
-header nav{margin-top:14px}header nav a{color:#fff}#onsite{grid-template-columns:1fr}#onsiteActions{display:flex;flex-wrap:wrap;gap:8px}
+/* 頁首 */
+.site-header{
+  background:linear-gradient(125deg,var(--brand-dark),#306e58);
+  color:#fff;border-radius:22px;padding:22px 20px 16px;
+  box-shadow:0 6px 0 #b4cabd,0 14px 22px #1b473e30;
+}
+.site-header h1{margin:2px 0 6px;font-size:clamp(24px,6.4vw,40px)}
+.site-header p{margin:0;color:#e1eee8}
+.site-header .eyebrow{font-size:.85rem;letter-spacing:.08em;opacity:.9}
+.site-header .lead{font-size:.98rem}
+.page-nav{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.page-nav a{
+  flex:1 1 0;min-width:120px;display:flex;align-items:center;justify-content:center;
+  min-height:46px;padding:8px 14px;border-radius:999px;
+  color:#fff;text-decoration:none;font-weight:650;
+  background:#ffffff1f;border:1px solid #ffffff55;
+}
+.page-nav a:hover{background:#ffffff33}
 
-.bluetooth-help{background:#f0f6f2;border:1px solid #b8cdbf;border-radius:12px;padding:14px 18px;margin:16px 0;overflow-wrap:anywhere}.bluetooth-help h3{margin-top:0}.bluetooth-help a{color:#245740;text-decoration:underline}.bluetooth-help li{margin:6px 0}
+/* 版面 */
+main{display:grid;grid-template-columns:1fr;gap:14px;margin-top:22px}
+.card{border-radius:var(--radius);padding:18px 16px;background:var(--card);border:1px solid var(--line);box-shadow:0 2px 6px #1b473e0d;min-width:0}
+.hint{color:var(--ink-soft);font-size:.94rem}
+.note{color:var(--ink-soft);font-size:.9rem;border-left:3px solid var(--accent);padding-left:10px}
+.stack{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+
+/* 步驟 */
+.step{display:flex;gap:12px;padding:12px 0;border-top:1px dashed var(--line)}
+.step:first-child{border-top:0;padding-top:4px}
+.step-no{
+  flex:none;width:28px;height:28px;margin-top:2px;border-radius:50%;
+  display:grid;place-items:center;font-size:.85rem;font-weight:700;
+  background:var(--brand-soft);color:var(--brand);border:1px solid #c5d8c9;
+}
+.step-body{flex:1;min-width:0}
+
+/* 表單 */
+label,legend{font-weight:650;display:block;margin-bottom:4px}
+input,select,button{font:inherit;border-radius:12px;min-height:48px;padding:10px 14px}
+input,select{
+  width:100%;border:1px solid var(--line-strong);background:#fff;color:var(--ink);
+  font-size:16px; /* 避免 iOS 自動放大 */
+  margin:0;-webkit-appearance:none;appearance:none;
+}
+input[type=date]{min-height:48px;display:block}
+input:read-only{background:#f6f9f5}
+input::placeholder{color:#8aa197}
+.input-row{display:flex;flex-direction:column;gap:8px}
+fieldset{border:0;padding:0;margin:0;min-width:0}
+
+/* 按鈕 */
+button{
+  border:1px solid var(--brand);background:var(--brand);color:#fff;cursor:pointer;
+  font-weight:650;touch-action:manipulation;transition:background .15s,transform .05s;
+}
+button:active:not(:disabled){transform:translateY(1px)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.btn-secondary{background:#fff;color:var(--brand)}
+.btn-secondary:hover:not(:disabled){background:var(--brand-soft)}
+.btn-block{width:100%;margin-top:10px;min-height:52px;font-size:1.05rem}
+.button-row{display:grid;grid-template-columns:1fr;gap:8px;margin:12px 0 4px}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+/* 時段 */
+.slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.slots button{
+  min-height:60px;padding:8px 6px;background:var(--brand-soft);color:#203f36;
+  border-color:#c5d8c9;font-variant-numeric:tabular-nums;line-height:1.35;
+}
+.slots button[aria-pressed=true]{background:var(--brand);color:#fff;border-color:var(--brand);box-shadow:0 0 0 3px #28614f33}
+.slots button:disabled{background:#f1f3f0;color:#7d8c85;border-color:#dfe5df;opacity:1}
+.slots small{display:block;font-size:.8rem;font-weight:500;opacity:.85}
+
+/* 狀態訊息 */
+.status,[role=status]{overflow-wrap:anywhere}
+.status:not(:empty){background:#f4f8f2;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:.95rem}
+.status-strong{font-weight:650}
+
+/* 預約收據 */
+.receipt{
+  display:grid;gap:8px;margin-top:12px;padding:14px;border-radius:14px;
+  background:#fff8ea;border:1px solid #e7cf9f;
+}
+.receipt input{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:15px;letter-spacing:.02em}
+
+/* 現場操作 */
+.link-button{
+  display:inline-flex;align-items:center;min-height:44px;padding:6px 14px;border-radius:999px;
+  background:var(--brand-soft);border:1px solid #c5d8c9;text-decoration:none;font-weight:650;
+}
+.back-link{display:inline-flex;align-items:center;min-height:44px;font-weight:650}
+.onsite-controls{margin-top:12px;padding:14px;border-radius:14px;background:#f7faf6;border:1px solid var(--line)}
+.onsite-controls input{margin-bottom:10px}
+.action-grid,#onsiteActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#onsiteActions button{width:100%;min-height:52px}
+
+/* 藍牙說明 */
+.bluetooth-help{background:#f0f6f2;border:1px solid #b8cdbf;border-radius:14px;padding:14px 16px;margin:14px 0;overflow-wrap:anywhere}
+.bluetooth-help h3{margin-top:0}
+.bluetooth-help ol,.music-box ol{padding-left:1.3em;margin:8px 0}
+.bluetooth-help li,.music-box li{margin:6px 0}
+.bluetooth-help a{color:#245740;text-decoration:underline}
+.help-links{display:flex;flex-wrap:wrap;gap:8px 16px}
+.help-links a{display:inline-flex;align-items:center;min-height:40px}
+.music-box{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+
+/* 頁尾 */
+.site-footer{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;padding:22px 6px 8px;color:#465d53;font-size:.9rem}
+.site-footer a{display:inline-flex;align-items:center;min-height:44px}
+
+/* 較寬螢幕 */
+@media (min-width:560px){
+  .input-row{flex-direction:row;align-items:stretch}
+  .input-row input{flex:1}
+  .input-row button{flex:none;white-space:nowrap}
+  .button-row{grid-template-columns:repeat(2,max-content)}
+  .receipt{grid-template-columns:auto 1fr auto;align-items:center}
+  .slots{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .card{padding:22px}
+}
+@media (min-width:760px){
+  body{padding:20px}
+  .site-header{padding:28px 32px 20px}
+  .page-nav a{flex:0 0 auto}
+  main{margin-top:30px;gap:18px}
+  #booking{grid-template-columns:1.25fr 1fr;align-items:start}
+  .slots{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .site-footer{text-align:center}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}button{transition:none}}
+
+/* Comfort refinement: full-width fields, compact help, balanced desktop columns. */
+:root{font-size:16px;line-height:1.7;--bg:#f5f6f1;--line:#dfe6de;--ink-soft:#52665d}
+body{padding:24px 24px 16px}
+header,main,footer{max-width:1120px}
+.site-header{padding:26px 32px 22px;border-radius:24px;box-shadow:0 5px 0 #bdcfc1,0 12px 22px #1b473e15}
+.site-header h1{font-size:clamp(26px,3.2vw,36px);line-height:1.4;margin:4px 0 6px;text-wrap:balance}
+.site-header .eyebrow{font-size:12px;letter-spacing:.12em}
+.site-header .lead{font-size:15px}
+.page-nav{gap:8px;margin-top:18px}
+.page-nav a{min-height:44px;flex:0 0 auto;font-size:15px;padding:8px 22px}
+body:has(#booking:not([hidden])) .page-nav a[href="#booking"],body:has(#onsite:not([hidden])) .page-nav a[href="#onsite"],body:has(#bluetooth:not([hidden])) .page-nav a[href="#onsite"]{background:#fff;color:#245340;border-color:#fff}
+main{margin-top:26px;gap:24px;grid-template-columns:1fr}
+.card{padding:26px;border-radius:20px;box-shadow:0 3px 14px #253e3005}
+h2{font-size:22px;margin-bottom:8px}
+.hint{font-size:14px;line-height:1.8;margin:6px 0 18px;max-width:72ch}
+.step{display:block;position:relative;padding:20px 0;border-top:1px solid #e8ede6}
+.step:first-child{padding-top:4px}
+.step-no{position:absolute;left:0;top:20px;width:26px;height:26px;font-size:12px;margin:0}
+.step:first-child .step-no{top:4px}
+.step-body>label,.step-body legend{display:flex;align-items:center;min-height:26px;padding-left:38px;margin-bottom:12px;font-size:15px}
+.step-body{min-width:0}
+.input-row{flex-direction:row;gap:8px;align-items:stretch}
+.input-row input{flex:1;min-width:0}
+.input-row button{flex:none;white-space:nowrap}
+input,select,button{min-height:48px;border-radius:10px}
+input,select{padding:10px 12px;min-width:0}
+button{font-size:15px;padding:10px 16px}
+button:disabled{opacity:.65}
+.slots{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.slots button{min-height:64px;padding:10px 4px;font-size:15px;white-space:nowrap;line-height:1.5}
+.slots button:disabled{color:#65736b;background:#f1f3ef}
+.slots small{font-size:12px}
+.btn-block{margin-top:4px;min-height:50px;font-size:16px}
+.status:not(:empty){font-size:14px;line-height:1.8}
+.query-card .hint{margin-bottom:20px}
+.query-card label{font-size:15px}
+.query-card .input-row{flex-direction:column}
+.query-card .input-row button{width:100%}
+.receipt{grid-template-columns:1fr;margin-top:18px}
+.receipt input{min-width:0;max-width:100%;font-size:13px}
+#onsite,#bluetooth{max-width:860px;margin-left:auto;margin-right:auto;grid-template-columns:1fr}
+#onsite .hint{max-width:65ch}
+.bluetooth-help{margin:16px 0;padding:14px 16px;font-size:14px;line-height:1.85;background:#f3f7f1;border-color:#d6e2d4}
+.bluetooth-help>p{margin:0}
+.bluetooth-help details{margin-top:6px}
+.bluetooth-help summary{cursor:pointer;min-height:44px;align-content:center;font-weight:650;color:#28614f}
+.bluetooth-help summary:focus-visible{outline:3px solid var(--focus);outline-offset:3px;border-radius:4px}
+.help-content{padding-top:6px;border-top:1px solid #d6e2d4}
+.help-content p{margin:10px 0}
+.help-links a{min-height:44px}
+.music-box{padding-top:20px;margin-top:24px}
+.music-box h3{font-size:18px}
+.music-box li{line-height:1.9}
+.site-footer{padding-top:24px;font-size:13px}
+@media(min-width:960px){
+ #booking{grid-template-columns:minmax(0,1fr) 340px;align-items:start}
+ .query-card{position:sticky;top:24px}
+ #booking .slots{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(min-width:560px) and (max-width:959px){
+ #booking{max-width:720px;grid-template-columns:1fr}
+ .slots{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .query-card .input-row{flex-direction:row}
+ .query-card .input-row button{width:auto}
+}
+@media(max-width:559px){
+ body{padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+ .site-header{padding:20px 18px 18px;border-radius:20px}
+ .site-header h1{font-size:25px;letter-spacing:0;line-height:1.45}
+ .site-header .eyebrow{font-size:11px;letter-spacing:.07em}
+ .site-header .lead{font-size:13px;line-height:1.8}
+ .page-nav{margin-top:14px;gap:8px}
+ .page-nav a{flex:1 1 0;min-width:0;min-height:44px;font-size:14px;padding:8px 10px}
+ main{margin-top:24px;gap:16px}
+ .card{padding:20px 18px;border-radius:16px}
+ h2{font-size:20px}
+ .hint{font-size:13px;margin-bottom:16px}
+ .step{padding:18px 0}
+ .step-no{top:18px}
+ .step-body>label,.step-body legend{margin-bottom:10px}
+ .input-row button{padding-inline:12px;font-size:14px}
+ .slots{gap:8px}
+ .slots button{min-height:62px;font-size:14px}
+ .query-card .input-row{flex-direction:row}
+ .query-card .input-row button{width:auto}
+ .bluetooth-help{padding:12px 14px;font-size:13px}
+ .button-row{grid-template-columns:1fr 1fr;gap:8px}
+ .button-row button{padding-inline:8px;font-size:14px}
+ .site-footer{gap:4px;font-size:12px;padding-inline:2px}
+ .site-footer a{min-height:44px}
+}
+@media(max-width:359px){
+ body{padding-inline:12px}
+ .site-header h1{font-size:22px}
+ .card{padding:18px 14px}
+ .input-row button{font-size:13px;padding-inline:10px}
+ .slots button{font-size:13px}
+}
