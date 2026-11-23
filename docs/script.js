@@ -59,12 +59,10 @@ $('query').onsubmit=async e=>{
   try{$('result').textContent=description(await api('/api/reservations/'+encodeURIComponent(id)));}catch(e){$('result').textContent=e.message;}finally{if(button)button.disabled=false;}
 };
 load();
-let scanGeneration=0;
 function showPage(){
   const onsite=location.hash==='#onsite';
   const bluetooth=location.hash==='#bluetooth';
   $('onsite').hidden=!onsite;$('bluetooth').hidden=!bluetooth;$('booking').hidden=onsite||bluetooth;
-  if(!bluetooth)stopCamera();
 }
 window.addEventListener('hashchange',showPage);showPage();
 let onsiteBusy=false;
@@ -113,7 +111,7 @@ $('confirmPlaque').onclick=async()=>{
 let publicDevice, publicConnecting=false;
 $('publicBleConnect').onclick=async()=>{
   if(publicConnecting||publicDevice?.gatt?.connected)return;
-  if(!navigator.bluetooth){bleStatus('此瀏覽器無法使用網頁藍牙，請改用支援的 Chrome 並開啟藍牙。');return;}
+  if(!navigator.bluetooth){bleStatus('此瀏覽器不支援網頁藍牙。iPhone 請用 Bluefy 開啟本頁；Android 請用支援的 Chrome，並允許藍牙權限。');return;}
   const service='640ac120-467c-459d-8899-913ea30645b1';
   publicConnecting=true;$('publicBleConnect').disabled=true;bleStatus('正在選擇裝置…');
   try{
@@ -133,43 +131,3 @@ $('publicBleConnect').onclick=async()=>{
 };
 $('publicBleDisconnect').onclick=()=>publicDevice?.gatt?.disconnect();
 addEventListener('pagehide',()=>publicDevice?.gatt?.disconnect());
-function stopCamera(){
-  ++scanGeneration;
-  const video=$('qrVideo');
-  video.srcObject?.getTracks().forEach(track=>track.stop());
-  video.srcObject=null;video.hidden=true;
-  $('stopScan').hidden=true;$('scanQr').disabled=false;
-}
-$('stopScan').onclick=()=>{stopCamera();$('scanStatus').textContent='相機已關閉。';};
-addEventListener('pagehide',stopCamera);
-$('scanQr').onclick=async()=>{
-  if(!navigator.mediaDevices?.getUserMedia||!globalThis.BarcodeDetector){
-    $('scanStatus').textContent='此瀏覽器不支援網頁掃碼。請直接按「連接 ESP32」。';return;
-  }
-  const run=++scanGeneration, status=$('scanStatus'), video=$('qrVideo');
-  $('scanQr').disabled=true;$('stopScan').hidden=false;status.textContent='等待相機權限…';
-  try{
-    if(!(await BarcodeDetector.getSupportedFormats()).includes('qr_code'))throw Error();
-    if(run!==scanGeneration)return;
-    const detector=new BarcodeDetector({formats:['qr_code']});
-    const stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'}}});
-    if(run!==scanGeneration){stream.getTracks().forEach(t=>t.stop());return;}
-    video.srcObject=stream;video.hidden=false;await video.play();
-    const expected='https://tntintaiwan-prog.github.io/ferris-wheel-reservation/#bluetooth';
-    status.textContent='請將現場設備 QR Code 對準鏡頭。';
-    async function frame(){
-      if(run!==scanGeneration)return;
-      try{
-        const results=await detector.detect(video);
-        if(run!==scanGeneration)return;
-        if(results.some(x=>x.rawValue===expected)){
-          stopCamera();status.textContent='已辨識現場設備標籤。請按「連接 ESP32」並確認裝置。';
-          $('publicBleConnect').focus();return;
-        }
-        if(results.length)status.textContent='這不是本系統的設備 QR Code。';
-        setTimeout(frame,200);
-      }catch{if(run===scanGeneration){stopCamera();status.textContent='掃描中斷，仍可直接連接 ESP32。';}}
-    }
-    frame();
-  }catch{if(run===scanGeneration){stopCamera();status.textContent='無法開啟相機或辨識 QR Code，請直接連接 ESP32。';}}
-};
