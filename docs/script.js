@@ -45,7 +45,7 @@ $('book').onsubmit=async e=>{
     const [k,requestKey]=keyFor(date,time,plaqueCode);
     const r=await api('/api/reservations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({date,time,requestKey,plaqueCode})});
     try{localStorage.removeItem(k);}catch{}
-    $('receiptId').value=r.id;$('id').value=r.id;$('receipt').hidden=false;
+    $('receiptId').value=r.id;$('id').value=r.id;$('receipt').hidden=false;$('onsiteId').value=r.id;$('onsiteCode').value=r.plaque.code;
     $('notice').textContent='已確認儲存：'+description(r);await load();
   }catch(e){
     $('notice').textContent=e.message+' 若連線中斷，請先用同一時段重試。';
@@ -56,7 +56,10 @@ $('query').onsubmit=async e=>{
   e.preventDefault();const id=$('id').value.trim(), button=e.submitter;
   if(!/^R-[0-9a-f]{32}$/.test(id)){$('result').textContent='請輸入完整預約編號。';return;}
   if(button)button.disabled=true;$('result').textContent='查詢中…';
-  try{$('result').textContent=description(await api('/api/reservations/'+encodeURIComponent(id)));}catch(e){$('result').textContent=e.message;}finally{if(button)button.disabled=false;}
+  $('queryToOnsite').hidden=true;
+  try{const r=await api('/api/reservations/'+encodeURIComponent(id));$('result').textContent=description(r);
+    if(r.plaque&&$('id').value.trim()===id){$('onsiteCode').value=r.plaque.code;$('onsiteId').value=r.id;$('queryToOnsite').hidden=false;}
+  }catch(e){$('result').textContent=e.message;}finally{if(button)button.disabled=false;}
 };
 load();
 function showPage(){
@@ -65,39 +68,91 @@ function showPage(){
   $('onsite').hidden=!onsite;$('bluetooth').hidden=!bluetooth;$('booking').hidden=onsite||bluetooth;
 }
 window.addEventListener('hashchange',showPage);showPage();
-let onsiteBusy=false;
-const onsiteRequest=(code,action,id)=>api('/api/onsite',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,action,id})});
-function clearOnsite(){$('onsiteControls').hidden=true;$('onsiteActions').replaceChildren();}
+let onsiteBusy=false, onsiteData=null, moveAbort=null, timerOffset=0;
+const validReservation=id=>/^R-[0-9a-f]{32}$/.test(id);
+function onsiteRequest(code,action,id,job){
+  if(action==='lookup')return api('/api/onsite?'+new URLSearchParams({code,...(validReservation(id)?{id}:{})}));
+  return api('/api/onsite',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,action,id,job})});
+}
+function clearOnsite(){onsiteData=null;$('onsiteControls').hidden=true;$('onsiteActions').replaceChildren();$('ritualClock').hidden=true;}
+function updateClock(){
+  const r=onsiteData?.reservation;
+  if(!r?.startedAt||r.status!=='running'){$('ritualClock').hidden=true;return;}
+  const seconds=Math.max(0,Math.ceil((Date.parse(r.endsAt)-(Date.now()+timerOffset))/1000));
+  $('ritualClock').hidden=false;$('countdown').textContent=[Math.floor(seconds/3600),Math.floor(seconds%3600/60),seconds%60].map(n=>String(n).padStart(2,'0')).join(':');
+  $('timeReminder').textContent=seconds?'祭拜計時中，請在放回牌位後按「結束祭拜」。':'祭拜時間已到，請放回牌位並按「結束祭拜」。';
+}
+setInterval(updateClock,1000);
 async function lookupOnsite(code){
   clearOnsite();$('onsiteResult').textContent='查詢中…';
   try{
-    const data=await onsiteRequest(code,'lookup');
+    const data=await onsiteRequest(code,'lookup',$('onsiteId').value.trim());
     if($('onsiteCode').value.trim()!==code)return;
-    const minutes=Math.ceil(data.waitSeconds/60);
-    $('onsiteResult').textContent=description(data.reservation)+(minutes?'｜尚未到時，約需等待 '+(minutes>=60?Math.floor(minutes/60)+' 小時 ':'')+minutes%60+' 分鐘':'');
-    for(const [action,label] of [['check','報到'],['cancel','取消預約'],['start','移動（流程測試）'],['end','結束']]){
-      if(!data.allowed[action])continue;
-      const b=document.createElement('button');b.type='button';b.textContent=label;$('onsiteActions').append(b);
-      b.onclick=async()=>{
-        if(onsiteBusy)return;
-        if(action==='start'&&!publicDevice?.gatt?.connected){
-          $('onsiteFeedback').textContent='請先連接 ESP32 藍牙，再回來操作。';return;
-        }
-        const id=$('onsiteId').value.trim();
-        if(!/^R-[0-9a-f]{32}$/.test(id)){$('onsiteFeedback').textContent='請輸入完整預約編號。';return;}
-        if(action==='cancel'&&!confirm('確定取消這筆預約？'))return;
-        onsiteBusy=true;$('onsiteFeedback').textContent='處理中…';
-        try{await onsiteRequest(code,action,id);$('onsiteFeedback').textContent=label+'成功。';await lookupOnsite(code);await load();}
-        catch(e){$('onsiteFeedback').textContent=e.message;}finally{onsiteBusy=false;}
-      };
-    }
-    $('onsiteControls').hidden=!$('onsiteActions').children.length;
+    onsiteData=data;if(data.serverNow)timerOffset=Date.parse(data.serverNow)-Date.now();
+    const seconds=data.waitSeconds,minutes=Math.ceil(seconds/60);
+    $('onsiteResult').textContent=description(data.reservation)+(minutes?'｜尚未到時，約需等待 '+Math.floor(minutes/60)+' 小時 '+minutes%60+' 分鐘':'');
+    if(data.deviceOccupied)$('onsiteResult').textContent+='｜設備正在其他祭拜流程中，請稍候重新查詢。';
+    renderOnsite();
   }catch(e){if($('onsiteCode').value.trim()===code)$('onsiteResult').textContent=e.message;}
 }
+function renderOnsite(){
+  $('onsiteActions').replaceChildren();if(!onsiteData)return;
+  const {reservation:r,allowed}=onsiteData;
+  const choices=[['check','報到'],['start','移動到預約牌位'],['take','已取出，開始祭拜'],['end','已放回，結束祭拜'],['cancel','取消預約']];
+  if(r.status==='running'&&r.motion?.status==='requested')choices.unshift(['resume','繼續／確認本次定位'],['abort','取消本次移動']);
+  for(const [action,label] of choices){
+    if(action!=='resume'&&!allowed[action])continue;
+    const b=document.createElement('button');b.type='button';b.textContent=label;b.disabled=onsiteBusy;
+    b.onclick=()=>performOnsite(action);$('onsiteActions').append(b);
+  }
+  $('onsiteControls').hidden=false;updateClock();
+}
+async function performOnsite(action){
+  if(onsiteBusy||!onsiteData)return;
+  const code=$('onsiteCode').value.trim(),id=$('onsiteId').value.trim();
+  if(!validReservation(id)){$('onsiteFeedback').textContent='請輸入預約成功時取得的完整 R-… 編號。';$('onsiteId').focus();return;}
+  if(['start','resume'].includes(action)&&!publicMotor.ready){$('onsiteFeedback').textContent=publicMotor.connected?'設備尚未校正原點，請管理員處理。':'請先連接 ESP32，再回到現場操作。';return;}
+  if(action==='cancel'&&!confirm('確定取消這筆預約？'))return;
+  if(action==='take'&&!confirm('請確認已取出牌位，現在開始一小時計時？'))return;
+  if(action==='end'&&!confirm('請確認牌位已放回，再結束本次祭拜。'))return;
+  onsiteBusy=true;renderOnsite();$('onsiteCode').disabled=true;$('onsiteId').disabled=true;$('onsiteFeedback').textContent='處理中…';
+  try{
+    if(action==='start'||action==='resume'){
+      moveAbort=new AbortController();const signal=moveAbort.signal;$('stopMovement').hidden=false;
+      const begun=await onsiteRequest(code,'start',id);
+      const r=begun.reservation;
+      $('onsiteFeedback').textContent='正在移動到第 '+r.position+' 格，請保持此頁開啟；必要時按緊急停止。';
+      try{
+        if(signal.aborted)throw Error('操作已中斷，未啟動馬達。');
+        await publicMotor.runTo(r.position,r.motion.job,{signal});
+      }
+      catch(e){
+        await onsiteRequest(code,'abort',id,r.motion.job).catch(()=>{});
+        throw e;
+      }finally{moveAbort=null;$('stopMovement').hidden=true;}
+      await onsiteRequest(code,'arrived',id,r.motion.job);
+      $('onsiteFeedback').textContent='ESP32 已回報定位脈波完成。請目視確認牌位正確、取出後按「開始祭拜」。';
+    }else{
+      if(action==='abort')await publicMotor.stop().catch(()=>{});
+      const result=await onsiteRequest(code,action,id,action==='abort'?onsiteData.reservation.motion?.job:undefined);
+      if(result.serverNow)timerOffset=Date.parse(result.serverNow)-Date.now();
+      $('onsiteFeedback').textContent={check:'報到成功，可連接 ESP32 移動到預約牌位。',take:'已開始一小時計時；音樂請由手機音樂 App 播放。',end:'祭拜已結束，請在手機音樂 App 停止音樂。',cancel:'已取消預約。',abort:'本次移動已取消，請管理員確認原點後再試。'}[action];
+      if(['cancel','end'].includes(action)){onsiteData={reservation:result.reservation,allowed:{}};renderOnsite();$('onsiteResult').textContent=description(result.reservation);return;}
+    }
+    await lookupOnsite(code);
+  }catch(e){$('onsiteFeedback').textContent=e.message+' 若網路中斷，請保留同一預約編號重新查詢，勿重複建立預約。';}
+  finally{moveAbort=null;$('stopMovement').hidden=true;onsiteBusy=false;$('onsiteCode').disabled=false;$('onsiteId').disabled=false;renderOnsite();}
+}
+$('stopMovement').onclick=()=>{moveAbort?.abort();};
+function interruptMovement(){if(moveAbort)moveAbort.abort();}
+addEventListener('pagehide',interruptMovement);addEventListener('blur',interruptMovement);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)interruptMovement();});
 $('onsiteCode').oninput=()=>{clearOnsite();$('onsiteResult').textContent='';$('onsiteFeedback').textContent='';};
+$('onsiteId').oninput=()=>{clearOnsite();$('onsiteResult').textContent='輸入完成後請重新查詢。';};
 $('onsiteForm').onsubmit=async e=>{
-  e.preventDefault();if(onsiteBusy)return;onsiteBusy=true;$('onsiteFeedback').textContent='';
-  try{await lookupOnsite($('onsiteCode').value.trim());}finally{onsiteBusy=false;}
+  e.preventDefault();if(onsiteBusy)return;
+  const id=$('onsiteId').value.trim();if(id&&!validReservation(id)){$('onsiteFeedback').textContent='預約編號格式錯誤，請貼上完整 R-… 編號。';return;}
+  onsiteBusy=true;try{await lookupOnsite($('onsiteCode').value.trim());}finally{onsiteBusy=false;renderOnsite();}
 };
 
 $('plaque').oninput=()=>{plaque=null;selected='';$('submit').disabled=true;$('plaqueResult').textContent='';};
@@ -108,26 +163,22 @@ $('confirmPlaque').onclick=async()=>{
   catch(e){plaque=null;$('submit').disabled=true;$('plaqueResult').textContent=e.message;}
 };
 
-let publicDevice, publicConnecting=false;
+let publicConnecting=false;
+function bleStatus(message){$('publicBleStatus').textContent=message;}
+const publicMotor=new FerrisMotor(state=>{
+  if(!state)bleStatus('藍牙已中斷；定位中斷時需管理員重新校正原點。');
+  else if(['I','U','E'].includes(state.phase))bleStatus('已連接，但尚未校正原點，請管理員先完成校正。');
+  else if(state.phase==='M')bleStatus('正在定位到第 '+state.slot+' 格，請保持此頁開啟。');
+  else if(['R','D'].includes(state.phase))bleStatus('已連接且原點有效，可返回現場操作。');
+  $('publicBleDisconnect').disabled=!publicMotor.connected;
+  $('publicBleConnect').disabled=publicConnecting||publicMotor.connected;
+});
 $('publicBleConnect').onclick=async()=>{
-  if(publicConnecting||publicDevice?.gatt?.connected)return;
-  if(!navigator.bluetooth){bleStatus('此瀏覽器不支援網頁藍牙。iPhone 請用 Bluefy 開啟本頁；Android 請用支援的 Chrome，並允許藍牙權限。');return;}
-  const service='640ac120-467c-459d-8899-913ea30645b1';
-  publicConnecting=true;$('publicBleConnect').disabled=true;bleStatus('正在選擇裝置…');
-  try{
-    const device=await navigator.bluetooth.requestDevice({filters:[{services:[service]}]});
-    publicDevice=device;
-    device.addEventListener('gattserverdisconnected',()=>{
-      if(publicDevice!==device)return;
-      $('publicBleDisconnect').disabled=true;$('publicBleConnect').disabled=false;bleStatus('連線已中斷。');
-    });
-    const gatt=await device.gatt.connect();
-    await gatt.getPrimaryService(service);
-    if(!gatt.connected)throw Error('Disconnected');
-    $('publicBleDisconnect').disabled=false;bleStatus('已連接 ESP32。可返回現場操作。');
-  }catch(e){
-    publicDevice?.gatt?.disconnect();bleStatus(e.name==='NotFoundError'?'未選取裝置。':'連線失敗，請確認 ESP32 韌體與藍牙狀態。');
-  }finally{publicConnecting=false;$('publicBleConnect').disabled=!!publicDevice?.gatt?.connected;}
+  if(publicConnecting||publicMotor.connected)return;
+  publicConnecting=true;$('publicBleConnect').disabled=true;bleStatus('正在選擇 ESP32…');
+  try{await publicMotor.connect();}
+  catch(e){bleStatus(e.name==='NotFoundError'?'未選取裝置。':e.message);}
+  finally{publicConnecting=false;$('publicBleConnect').disabled=publicMotor.connected;$('publicBleDisconnect').disabled=!publicMotor.connected;}
 };
-$('publicBleDisconnect').onclick=()=>publicDevice?.gatt?.disconnect();
-addEventListener('pagehide',()=>publicDevice?.gatt?.disconnect());
+$('publicBleDisconnect').onclick=()=>{interruptMovement();publicMotor.disconnect();};
+addEventListener('pagehide',()=>publicMotor.disconnect());

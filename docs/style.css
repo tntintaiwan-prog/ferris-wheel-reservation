@@ -264,3 +264,13 @@ button:disabled{opacity:.65}
  .input-row button{font-size:13px;padding-inline:10px}
  .slots button{font-size:13px}
 }
+
+/* 一般人員現場流程 */
+#onsiteForm{gap:10px}#onsiteForm label{margin:6px 0 0}#onsiteForm input{max-width:100%}
+#onsiteForm>button{margin-top:4px}.onsite-controls{padding:14px}
+#onsiteActions button{white-space:normal;min-height:52px;line-height:1.5}
+.emergency-stop{display:block;width:100%;min-height:54px;background:#a3392f;border-color:#a3392f;margin:14px 0;font-weight:700}
+.ritual-clock{border:1px solid #dfc99d;background:#fff9ec;padding:20px;border-radius:16px;margin-top:16px;text-align:center}
+.ritual-clock h3{font-size:16px}.ritual-clock output{display:block;font:600 clamp(32px,8vw,48px)/1.5 ui-monospace,monospace;letter-spacing:.04em;color:#305545}
+.ritual-clock p{font-size:14px}.receipt .link-button{justify-content:center}
+@media(max-width:420px){#onsiteActions{grid-template-columns:1fr}}
