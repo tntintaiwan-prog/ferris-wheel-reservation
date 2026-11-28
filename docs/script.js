@@ -80,7 +80,7 @@ function updateClock(){
   if(!r?.startedAt||r.status!=='running'){$('ritualClock').hidden=true;return;}
   const seconds=Math.max(0,Math.ceil((Date.parse(r.endsAt)-(Date.now()+timerOffset))/1000));
   $('ritualClock').hidden=false;$('countdown').textContent=[Math.floor(seconds/3600),Math.floor(seconds%3600/60),seconds%60].map(n=>String(n).padStart(2,'0')).join(':');
-  $('timeReminder').textContent=seconds?'祭拜計時中，請在放回牌位後按「結束祭拜」。':'祭拜時間已到，請放回牌位並按「結束祭拜」。';
+  $('timeReminder').textContent=seconds?'祭拜進行中。':'祭拜時間已到。';
 }
 setInterval(updateClock,1000);
 async function lookupOnsite(code){
@@ -131,12 +131,12 @@ async function performOnsite(action){
         throw e;
       }finally{moveAbort=null;$('stopMovement').hidden=true;}
       await onsiteRequest(code,'arrived',id,r.motion.job);
-      $('onsiteFeedback').textContent='ESP32 已回報定位脈波完成。請目視確認牌位正確、取出後按「開始祭拜」。';
+      $('onsiteFeedback').textContent='移動指令已完成。';
     }else{
       if(action==='abort')await publicMotor.stop().catch(()=>{});
       const result=await onsiteRequest(code,action,id,action==='abort'?onsiteData.reservation.motion?.job:undefined);
       if(result.serverNow)timerOffset=Date.parse(result.serverNow)-Date.now();
-      $('onsiteFeedback').textContent={check:'報到成功，可連接 ESP32 移動到預約牌位。',take:'已開始一小時計時；音樂請由手機音樂 App 播放。',end:'祭拜已結束，請在手機音樂 App 停止音樂。',cancel:'已取消預約。',abort:'本次移動已取消，請管理員確認原點後再試。'}[action];
+      $('onsiteFeedback').textContent={check:'報到成功。',take:'祭拜已開始。',end:'祭拜已結束。',cancel:'已取消預約。',abort:'本次移動已取消，請管理員確認原點後再試。'}[action];
       if(['cancel','end'].includes(action)){onsiteData={reservation:result.reservation,allowed:{}};renderOnsite();$('onsiteResult').textContent=description(result.reservation);return;}
     }
     await lookupOnsite(code);

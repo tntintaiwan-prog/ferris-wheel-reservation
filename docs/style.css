@@ -274,3 +274,9 @@ button:disabled{opacity:.65}
 .ritual-clock h3{font-size:16px}.ritual-clock output{display:block;font:600 clamp(32px,8vw,48px)/1.5 ui-monospace,monospace;letter-spacing:.04em;color:#305545}
 .ritual-clock p{font-size:14px}.receipt .link-button{justify-content:center}
 @media(max-width:420px){#onsiteActions{grid-template-columns:1fr}}
+
+/* Compact help, shown only on request. */
+.bluetooth-help{padding:0 14px}.bluetooth-help details{margin:0}.bluetooth-help summary,.music-box summary{cursor:pointer;min-height:48px;align-content:center;font-weight:650;color:#28614f}
+.help-content ul,.help-content ol{padding-left:1.3em;margin:12px 0}.help-content li{margin:8px 0}
+.music-box{margin-top:12px;padding-top:0}.music-box .help-content{padding-top:0}
+.site-header h1{margin-top:0;margin-bottom:0}.site-header .page-nav{margin-top:18px}

@@ -6,22 +6,20 @@
 <meta name="theme-color" content="#1b473e">
 <meta name="format-detection" content="telephone=no">
 <title>靈魂轉運站</title>
-<link rel="stylesheet" href="style.css?v=onsite-3">
+<link rel="stylesheet" href="style.css?v=clean-4">
 <script src="motor.js?v=onsite-3"></script>
-<script type="module" src="script.js?v=onsite-3"></script>
+<script type="module" src="script.js?v=clean-4"></script>
 </head>
 <body>
 <header class="site-header">
 
   <h1>靈魂轉運站</h1>
-  <p class="lead">先確認祭拜對象，再選擇一小時時段。</p>
   <nav class="page-nav" aria-label="頁面切換"><a href="#booking">祭拜預約</a><a href="#onsite">現場操作</a></nav>
 </header>
 
 <main id="booking">
   <section class="card">
     <h2>建立預約</h2>
-    <p class="hint">每日 08:00～18:00（臺灣時間），每個整點時段限一筆。</p>
     <form id="book" class="stack">
       <div class="step">
         <span class="step-no" aria-hidden="true">1</span>
@@ -59,7 +57,6 @@
 
   <section class="card query-card">
     <h2>查詢預約</h2>
-    <p class="hint">已有預約？輸入預約成功時取得的完整編號，即可查詢日期與狀態。</p>
     <form id="query" class="stack">
       <label for="id">預約編號</label>
       <div class="input-row">
@@ -67,7 +64,7 @@
         <button class="btn-primary">查詢</button>
       </div>
     </form>
-    <p id="result" class="status" role="status"></p><a id="queryToOnsite" href="#onsite" class="link-button" hidden>帶入資料，前往現場操作</a>
+    <p id="result" class="status" role="status"></p><a id="queryToOnsite" href="#onsite" class="link-button" hidden>前往現場操作</a>
   </section>
 </main>
 
@@ -75,11 +72,10 @@
   <section class="card">
     <h2>現場操作</h2>
     <p><a href="#bluetooth" class="link-button">連接 ESP32 藍牙 →</a></p>
-    <p class="hint">輸入牌位及預約編號查詢。依序完成報到、定位、確認取出，放回牌位後結束祭拜。</p>
     <form id="onsiteForm" class="stack">
       <label for="onsiteCode">牌位編號</label>
       <input id="onsiteCode" required maxlength="24" placeholder="例如 0001" autocomplete="off">
-      <label for="onsiteId">預約編號（操作必填）</label>
+      <label for="onsiteId">預約編號</label>
       <input id="onsiteId" maxlength="34" autocomplete="off" placeholder="R-…" spellcheck="false" autocapitalize="off">
       <button class="btn-primary">查詢時段</button>
     </form>
@@ -99,31 +95,15 @@
   <section class="card">
     <p><a href="#onsite" class="back-link">← 返回現場操作</a></p>
     <h2>連接現場 ESP32</h2>
-    <aside class="bluetooth-help" aria-label="手機藍牙連接說明"><p><strong>iPhone 請使用 Bluefy</strong> 開啟本頁；Android 可使用支援網頁藍牙的 Chrome。</p><details><summary>查看連接步驟與下載方式</summary><div class="help-content">
-      <p>請使用 <strong>Bluefy</strong> 開啟本網站，並允許藍牙權限。一般 Safari／iPhone Chrome 無法直接使用這裡的網頁藍牙。</p>
-      <ol>
-        <li>安裝 Bluefy，將本頁網址複製並貼到 Bluefy 網址列。即使 Bluefy 介面是英文，本網站仍顯示繁體中文。</li>
-        <li>在本頁按「連接 ESP32」，選擇 <strong>Ferris-Admin-Jog</strong>，不需先到手機藍牙設定配對。</li>
-        <li>若掃 QR Code 後進入 Safari，請複製網址，再到 Bluefy 開啟。</li>
-      </ol>
-      <p class="help-links"><a href="https://apps.apple.com/tw/app/bluefy-web-ble-browser/id1492822055" target="_blank" rel="noopener noreferrer">下載 Bluefy（App Store）</a><a href="https://bluefy.app/guide.html" target="_blank" rel="noopener noreferrer">官方連接說明</a></p>
-      <p>Android 請用支援網頁藍牙的 Chrome。手機需在 ESP32 附近；連線不等於已啟動馬達。</p></div></details></aside>
-    <p>開啟裝置藍牙，按下「連接 ESP32」，選擇 Ferris-Admin-Jog。</p>
+    
+    
     <div class="button-row">
       <button id="publicBleConnect" type="button" class="btn-primary">連接 ESP32</button>
       <button id="publicBleDisconnect" type="button" class="btn-secondary" disabled>中斷連線</button>
     </div>
-    <p id="publicBleStatus" class="status status-strong" role="status">尚未連線。</p>
+    <p id="publicBleStatus" class="status status-strong" role="status">尚未連線。</p><aside class="bluetooth-help" aria-label="連線協助"><details><summary>連線協助</summary><div class="help-content"><ul><li>iPhone：使用 <a href="https://apps.apple.com/tw/app/bluefy-web-ble-browser/id1492822055" target="_blank" rel="noopener noreferrer">Bluefy</a>。</li><li>Android／電腦：使用支援網頁藍牙的 Chrome。</li><li>開啟藍牙，在裝置清單選擇 Ferris-Admin-Jog。</li></ul></div></details></aside>
 
-    <div class="music-box">
-      <h3>祭拜音樂</h3>
-      <ol>
-        <li>開啟功放板，在手機的「設定 → 藍牙」選擇 <strong>Shaibang</strong> 並連線。</li>
-        <li>用手機的音樂 App 播放大悲咒或你想聽的音樂。播放、暫停和音量都在手機上操作。</li>
-        <li>若聲音仍從手機播出，請在手機的媒體音訊輸出選擇 Shaibang。</li>
-      </ol>
-      <p class="note">功放板和 ESP32 分開連線。這裡的「連接 ESP32」只用於連接控制板。</p>
-    </div>
+    <details class="music-box"><summary>音樂連接方式</summary><div class="help-content"><ol><li>手機「設定 → 藍牙」連接 <strong>Shaibang</strong>。</li><li>使用手機音樂 App 播放，結束後自行停止。</li></ol></div></details>
   </section>
 </main>
 
